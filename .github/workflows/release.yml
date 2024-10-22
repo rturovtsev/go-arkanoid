@@ -18,7 +18,7 @@ jobs:
           go-version: 1.23
 
       - name: Build the executable
-        run: go build -o arcanoid.exe
+        run: go build -o arcanoid.exe ./cmd
 
       - name: Upload release asset
         uses: actions/upload-release-asset@v1
