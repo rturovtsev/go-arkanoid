@@ -2,14 +2,13 @@ package main
 
 import (
 	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/hajimehoshi/ebiten/v2/inpututil"
 	"github.com/hajimehoshi/ebiten/v2/vector"
 	"image/color"
 	"log"
 )
 
 const (
-	screenWidth  = 800
+	screenWidth  = 340
 	screenHeight = 600
 	paddleWidth  = 100
 	paddleHeight = 20
@@ -42,15 +41,10 @@ func (g *Game) Init() {
 
 func (g *Game) Update() error {
 	//отрисовка игрового состояния
-
-	//обработка ввода
-	if inpututil.IsKeyJustPressed(ebiten.KeyEscape) {
-		return nil
-	}
-	if inpututil.IsKeyJustPressed(ebiten.KeyLeft) {
+	if ebiten.IsKeyPressed(ebiten.KeyLeft) {
 		g.paddleX -= 5
 	}
-	if inpututil.IsKeyJustPressed(ebiten.KeyRight) {
+	if ebiten.IsKeyPressed(ebiten.KeyRight) {
 		g.paddleX += 5
 	}
 
@@ -75,7 +69,7 @@ func (g *Game) Update() error {
 	}
 	//вылет снизу
 	if g.ballY+ballSize > screenHeight {
-		g.ballX, g.ballY = screenWidth/2, screenHeight/2
+		g.ballX, g.ballY = (screenWidth+ballSize)/2, (screenHeight+ballSize)/2
 		g.ballVX, g.ballVY = 3, 3
 	}
 
@@ -92,7 +86,7 @@ func (g *Game) Update() error {
 				brickX := float32(i * (brickWidth + 10))
 				brickY := float32(j * (brickHeight + 10))
 
-				if g.ballX+ballSize > brickX && g.ballX < brickY+brickWidth && g.ballY > brickY && g.ballY < brickY+brickHeight {
+				if g.ballX+ballSize > brickX && g.ballX < brickX+brickWidth && g.ballY > brickY && g.ballY < brickY+brickHeight {
 					g.bricks[i][j] = false
 					g.score++
 					g.ballVY *= -1
@@ -117,7 +111,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 			if g.bricks[i][j] {
 				brickX := float32(i * (brickWidth + 10))
 				brickY := float32(j * (brickHeight + 10))
-				vector.DrawFilledRect(screen, brickX, brickY, brickWidth, brickHeight, color.RGBA{R: 0, G: 255, B: 0, A: 255}, true)
+				vector.DrawFilledRect(screen, brickX, brickY, brickWidth, brickHeight, color.RGBA{R: 61, G: 61, B: 61, A: 255}, true)
 			}
 		}
 	}
@@ -125,14 +119,14 @@ func (g *Game) Draw(screen *ebiten.Image) {
 
 func (g *Game) Layout(outsideWidth, outsideHeight int) (screeWidth, screenHeight int) {
 	//установка размеров экрана
-	return screenWidth, screenHeight
+	return outsideWidth, outsideHeight
 }
 
 func main() {
 	game := &Game{
-		paddleX: screenWidth / 2,
-		ballX:   screenWidth / 2,
-		ballY:   screenHeight / 2,
+		paddleX: (screenWidth - paddleWidth) / 2,
+		ballX:   (screenWidth - ballSize) / 2,
+		ballY:   (screenHeight - ballSize) / 2,
 		ballVX:  3,
 		ballVY:  3,
 		score:   0,
