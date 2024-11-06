@@ -1,8 +1,11 @@
 package main
 
 import (
+	"fmt"
 	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/hajimehoshi/ebiten/v2/text"
 	"github.com/hajimehoshi/ebiten/v2/vector"
+	"golang.org/x/image/font/basicfont"
 	"image/color"
 	"log"
 )
@@ -17,16 +20,18 @@ const (
 	brickHeight  = 20
 	numBricksRow = 10
 	numBricksCol = 5
+	scoreHeight  = 20
 )
 
 type Game struct {
-	paddleX float32
-	ballX   float32
-	ballY   float32
-	ballVX  float32
-	ballVY  float32
-	bricks  [][]bool
-	score   int
+	paddleX    float32
+	ballX      float32
+	ballY      float32
+	ballVX     float32
+	ballVY     float32
+	bricks     [][]bool
+	score      int
+	isGameOver bool
 }
 
 func (g *Game) Init() {
@@ -40,6 +45,16 @@ func (g *Game) Init() {
 }
 
 func (g *Game) Update() error {
+	if g.isGameOver {
+		return nil
+	}
+
+	// Убедитесь, что все кирпичи уничтожены
+	if g.allBricksDestroyed() {
+		g.isGameOver = true
+		return nil
+	}
+
 	//отрисовка игрового состояния
 	if ebiten.IsKeyPressed(ebiten.KeyLeft) {
 		g.paddleX -= 5
@@ -64,13 +79,14 @@ func (g *Game) Update() error {
 	if g.ballX < 0 || g.ballX+ballSize > screenWidth {
 		g.ballVX *= -1
 	}
-	if g.ballY < 0 {
+	if g.ballY < scoreHeight {
 		g.ballVY *= -1
 	}
 	//вылет снизу
 	if g.ballY+ballSize > screenHeight {
 		g.ballX, g.ballY = (screenWidth+ballSize)/2, (screenHeight+ballSize)/2
 		g.ballVX, g.ballVY = 3, 3
+		g.score -= 10
 	}
 
 	//проверка столкновения мяча и платформы
@@ -84,7 +100,7 @@ func (g *Game) Update() error {
 		for j := 0; j < numBricksRow; j++ {
 			if g.bricks[i][j] {
 				brickX := float32(i * (brickWidth + 10))
-				brickY := float32(j * (brickHeight + 10))
+				brickY := float32(j*(brickHeight+10) + scoreHeight)
 
 				if g.ballX+ballSize > brickX && g.ballX < brickX+brickWidth && g.ballY > brickY && g.ballY < brickY+brickHeight {
 					g.bricks[i][j] = false
@@ -99,6 +115,12 @@ func (g *Game) Update() error {
 }
 
 func (g *Game) Draw(screen *ebiten.Image) {
+	if g.isGameOver {
+		// Отрисовка сообщения об окончании игры
+		text.Draw(screen, fmt.Sprintf("GAME OVER! Score: %d", g.score), basicfont.Face7x13, screenWidth/2-60, screenHeight/2, color.White)
+		return
+	}
+
 	//отрисовка платформы
 	vector.DrawFilledRect(screen, g.paddleX, screenHeight-paddleHeight, paddleWidth, paddleHeight, color.RGBA{R: 255, G: 255, B: 255, A: 255}, true)
 
@@ -110,11 +132,14 @@ func (g *Game) Draw(screen *ebiten.Image) {
 		for j := 0; j < numBricksRow; j++ {
 			if g.bricks[i][j] {
 				brickX := float32(i * (brickWidth + 10))
-				brickY := float32(j * (brickHeight + 10))
+				brickY := float32(j*(brickHeight+10) + scoreHeight)
 				vector.DrawFilledRect(screen, brickX, brickY, brickWidth, brickHeight, color.RGBA{R: 61, G: 61, B: 61, A: 255}, true)
 			}
 		}
 	}
+
+	//отрисуем счет
+	text.Draw(screen, fmt.Sprintf("Score: %d", g.score), basicfont.Face7x13, screenWidth/2-40, 10, color.White)
 }
 
 func (g *Game) Layout(outsideWidth, outsideHeight int) (screeWidth, screenHeight int) {
@@ -122,11 +147,22 @@ func (g *Game) Layout(outsideWidth, outsideHeight int) (screeWidth, screenHeight
 	return outsideWidth, outsideHeight
 }
 
+func (g *Game) allBricksDestroyed() bool {
+	for i := 0; i < numBricksCol; i++ {
+		for j := 0; j < numBricksRow; j++ {
+			if g.bricks[i][j] {
+				return false
+			}
+		}
+	}
+	return true
+}
+
 func main() {
 	game := &Game{
 		paddleX: (screenWidth - paddleWidth) / 2,
 		ballX:   (screenWidth - ballSize) / 2,
-		ballY:   (screenHeight - ballSize) / 2,
+		ballY:   (screenHeight + scoreHeight - ballSize) / 2,
 		ballVX:  3,
 		ballVY:  3,
 		score:   0,
